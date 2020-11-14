@@ -25,6 +25,7 @@ services:
     image: mysql:5.7
     volumes:
       - ./fineract-db/docker:/docker-entrypoint-initdb.d:Z,ro
+      - fineract-mysql-data:/var/lib/mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: skdcnwauicn2ucnaecasdsajdnizucawencascdca
@@ -34,27 +35,27 @@ services:
       retries: 10
     ports:
       - "3306:3306"
+
   fineract-server:
-    build:
-      context: .
-      target: fineract
-    ports:
+    image: apache/fineract
+    ports: 
       - 8443:8443
+    restart: always
     depends_on:
       - fineractmysql
     environment:
-      - DRIVERCLASS_NAME=org.drizzle.jdbc.DrizzleDriver
+      - DRIVERCLASS_NAME=com.mysql.jdbc.Driver
       - PROTOCOL=jdbc
-      - SUB_PROTOCOL=mysql:thin
-      - fineract_tenants_driver=org.drizzle.jdbc.DrizzleDriver
-      - fineract_tenants_url=jdbc:mysql:thin://fineractmysql:3306/fineract_tenants
+      - SUB_PROTOCOL=mysql
+      - fineract_tenants_driver=com.mysql.jdbc.Driver
+      - fineract_tenants_url=jdbc:mysql://fineractmysql:3306/fineract_tenants
       - fineract_tenants_uid=root
-      - fineract_tenants_pwd=skdcnwauicn2ucnaecasdsajdnizucawencascdca
+      - fineract_tenants_pwd=skdcnwauicn2ucnaecasdsajdnizucawencascdca 
       - FINERACT_DEFAULT_TENANTDB_HOSTNAME=fineractmysql
       - FINERACT_DEFAULT_TENANTDB_PORT=3306
       - FINERACT_DEFAULT_TENANTDB_UID=root
       - FINERACT_DEFAULT_TENANTDB_PWD=skdcnwauicn2ucnaecasdsajdnizucawencascdca
-      - FINERACT_DEFAULT_TENANTDB_CONN_PARAMS=
+
 
   # Frontend service
   community-app:
@@ -64,6 +65,18 @@ services:
     ports:
       - 9090:80
 
+  web-app:
+    image: mifosx-web-app
+    build: ../mifosx-web-app_docker
+    container_name: mifos2-ui
+    restart: always
+    ports:
+      - 9091:80
+    labels:
+      - com.centurylinklabs.watchtower.enable=false
+
+volumes:
+  fineract-mysql-data:
 
 # https://issues.apache.org/jira/browse/FINERACT-762
 # To use an altnerative JDBC driver (which is faster, but not allowed to be default in Apache distribution)
